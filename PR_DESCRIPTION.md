@@ -5,7 +5,6 @@
 1. **Fixed example code:**
    - Changed import from `dagcuter::*` to `rs_dagcuter::*` to match the crate name in Cargo.toml
    - Added missing `chrono` dependency to Cargo.toml
-   - Fixed invalid Rust edition from "2024" to "2021"
 
 2. **Moved example file:**
    - Moved `example/main.rs` to `examples/main.rs` for consistency with Rust conventions

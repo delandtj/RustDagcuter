@@ -1,7 +1,7 @@
 [package]
 name = "rs-dagcuter"
 version = "0.0.1"
-edition = "2021"
+edition = "2024"
 description = "RustDagcuter is a Rust library for executing tasks in a Directed Acyclic Graph (DAG). It manages task dependencies, detects circular dependencies, and supports customizable task lifecycles (pre-execution, post-execution). It also supports concurrent execution of independent tasks to improve performance. Original: RustDagcuter 是一个用于执行任务的有向无环图 (DAG) 的 Rust 库。它管理任务依赖关系，检测循环依赖关系，并支持可自定义的任务生命周期（执行前、执行后）。它还支持并发执行独立任务，以提高性能。"
 license = "Apache-2.0"
 repository = "https://github.com/busyster996/RustDagcuter"
