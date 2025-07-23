@@ -25,7 +25,7 @@ impl Dagcuter {
         let mut in_degrees = HashMap::new();
         let mut dependents: HashMap<String, Vec<String>> = HashMap::new();
 
-        // 计算入度和依赖关系
+        // Calculate in-degrees and dependencies
         for (name, task) in &tasks {
             in_degrees.insert(name.clone(), task.dependencies().len() as i32);
 
@@ -50,19 +50,19 @@ impl Dagcuter {
         &mut self,
         ctx: CancellationToken,
     ) -> Result<HashMap<String, TaskResult>, DagcuterError> {
-        // 清空结果
+        // Clear results
         self.results.write().await.clear();
         self.execution_order.lock().await.clear();
 
-        // 创建任务通道
+        // Create task channels
         let (task_tx, mut task_rx) = mpsc::unbounded_channel::<String>();
         let (completion_tx, mut completion_rx) = mpsc::unbounded_channel::<String>();
 
-        // 初始化度数计数器
+        // Initialize degree counters
         let in_degrees = Arc::new(Mutex::new(self.in_degrees.clone()));
         let mut remaining_tasks = self.tasks.len();
 
-        // 将所有入度为0的任务发送到通道
+        // Send all tasks with in-degree 0 to the channel
         {
             let degrees = in_degrees.lock().await;
             for (name, &degree) in degrees.iter() {
@@ -74,14 +74,14 @@ impl Dagcuter {
             }
         }
 
-        // 启动任务执行器
-        let semaphore = Arc::new(Semaphore::new(1024)); // 限制并发数
+        // Start task executor
+        let semaphore = Arc::new(Semaphore::new(1024)); // Limit concurrency
         let mut handles = Vec::new();
 
-        // 任务处理循环
+        // Task processing loop
         while remaining_tasks > 0 {
             tokio::select! {
-                // 处理新任务
+                // Process new task
                 Some(task_name) = task_rx.recv() => {
                     let permit = semaphore.clone().acquire_owned().await.map_err(|_| {
                         DagcuterError::TaskExecution("Failed to acquire semaphore".to_string())
@@ -96,11 +96,11 @@ impl Dagcuter {
                     handles.push(handle);
                 }
                 
-                // 处理任务完成
+                // Process task completion
                 Some(completed_task) = completion_rx.recv() => {
                     remaining_tasks -= 1;
                     
-                    // 更新依赖任务的入度
+                    // Update in-degrees of dependent tasks
                     if let Some(children) = self.dependents.get(&completed_task) {
                         let mut degrees = in_degrees.lock().await;
                         for child in children {
@@ -116,19 +116,19 @@ impl Dagcuter {
                     }
                 }
                 
-                // 检查取消
+                // Check for cancellation
                 _ = ctx.cancelled() => {
                     return Err(DagcuterError::ContextCancelled("Execution cancelled".to_string()));
                 }
             }
         }
 
-        // 等待所有任务完成
+        // Wait for all tasks to complete
         try_join_all(handles).await.map_err(|e| {
             DagcuterError::TaskExecution(format!("Join error: {}", e))
         })?;
 
-        // 返回结果
+        // Return results
         let results = self.results.read().await.clone();
         Ok(results)
     }
@@ -145,19 +145,19 @@ impl Dagcuter {
         let execution_order = Arc::clone(&self.execution_order);
 
         tokio::spawn(async move {
-            // 准备输入
+            // Prepare inputs
             let inputs = Self::prepare_inputs(&task, &results).await;
 
-            // 执行任务 - 修复版本
+            // Execute task - fixed version
             let output = Self::execute_task(ctx, &task_name, &task, inputs).await?;
 
-            // 更新执行顺序
+            // Update execution order
             execution_order.lock().await.push(task_name.clone());
 
-            // 存储结果
+            // Store results
             results.write().await.insert(task_name.clone(), output);
 
-            // 通知任务完成
+            // Notify task completion
             completion_tx.send(task_name).map_err(|_| {
                 DagcuterError::TaskExecution("Failed to send completion signal".to_string())
             })?;
@@ -182,7 +182,7 @@ impl Dagcuter {
         inputs
     }
 
-    // 修复版本：使用新的retry接口，直接返回结果
+    // Fixed version: use new retry interface, directly return results
     async fn execute_task(
         ctx: CancellationToken,
         name: &str,
@@ -191,7 +191,7 @@ impl Dagcuter {
     ) -> Result<TaskResult, DagcuterError> {
         let retry_executor = RetryExecutor::new(task.retry_policy());
 
-        // 使用修复后的retry接口，直接返回结果
+        // Use fixed retry interface, directly return results
         retry_executor
             .execute_with_retry(ctx.clone(), name, |attempt| {
                 let ctx = ctx.clone();
@@ -210,7 +210,7 @@ impl Dagcuter {
                     // PostExecution
                     task.post_execution(ctx, &output).await?;
 
-                    // 直接返回结果，不再使用外部变量
+                    // Directly return results, no longer using external variables
                     Ok(output)
                 }
             })
@@ -229,7 +229,7 @@ impl Dagcuter {
     }
 
     pub fn print_graph(&self) {
-        // 查找所有根节点（入度为0）
+        // Find all root nodes (in-degree 0)
         let mut roots = Vec::new();
         for (name, &degree) in &self.in_degrees {
             if degree == 0 {
@@ -237,7 +237,7 @@ impl Dagcuter {
             }
         }
 
-        // 从每个根节点开始打印
+        // Print from each root node
         for root in roots {
             println!("{}", root);
             self.print_chain(&root, "  ");

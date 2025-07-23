@@ -31,7 +31,7 @@ impl RetryExecutor {
     pub fn new(policy: Option<RetryPolicy>) -> Self {
         let mut policy = policy.unwrap_or_default();
 
-        // 设置默认值
+        // Set default values
         if policy.interval.is_zero() {
             policy.interval = Duration::from_secs(1);
         }
@@ -48,7 +48,7 @@ impl RetryExecutor {
         Self { policy }
     }
 
-    // 修复版本：让闭包直接返回结果，而不是通过外部变量
+    // Fixed version: let the closure directly return results instead of using external variables
     pub async fn execute_with_retry<F, Fut, T>(
         &self,
         ctx: CancellationToken,
@@ -73,7 +73,7 @@ impl RetryExecutor {
             }
 
             match operation(attempt).await {
-                Ok(result) => return Ok(result), // 直接返回结果
+                Ok(result) => return Ok(result), // Directly return result
                 Err(e) => last_error = Some(e),
             }
 
@@ -90,7 +90,7 @@ impl RetryExecutor {
                     ));
                 }
                 _ = sleep(wait_time) => {
-                    // 继续重试
+                    // Continue retrying
                 }
             }
         }

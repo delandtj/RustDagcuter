@@ -12,10 +12,10 @@ pub fn has_cycle(tasks: &HashMap<String, BoxTask>) -> bool {
         rec_stack: &mut HashSet<String>,
     ) -> bool {
         if rec_stack.contains(task_name) {
-            return true; // 检测到循环
+            return true; // Cycle detected
         }
         if visited.contains(task_name) {
-            return false; // 已处理
+            return false; // Already processed
         }
 
         visited.insert(task_name.to_string());
