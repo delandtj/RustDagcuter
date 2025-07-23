@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tasks.insert("task2".to_string(), Arc::new(ExampleTask {
         name: "task2".to_string(),
-        deps: vec!["task1".to_string()],
+        deps: vec!["task3".to_string()],
     }));
 
     tasks.insert("task3".to_string(), Arc::new(ExampleTask {
@@ -71,12 +71,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tasks.insert("task5".to_string(), Arc::new(ExampleTask {
         name: "task5".to_string(),
-        deps: vec!["task2".to_string()],
+        deps: vec!["task6".to_string()],
     }));
 
     tasks.insert("task6".to_string(), Arc::new(ExampleTask {
         name: "task6".to_string(),
-        deps: vec!["task1".to_string(), "task4".to_string(), "task5".to_string()],
+        deps: vec!["task1".to_string(), "task4".to_string(), ],
     }));
 
 
