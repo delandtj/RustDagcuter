@@ -51,53 +51,54 @@ tokio-util = "0.7"
 
 2. Write the task and execute it:
 
-```rust 
-use dagcuter::*; 
-use async_trait::async_trait; 
-use tokio_util::sync::CancellationToken; 
-use std::{collections::HashMap, sync::Arc}; 
+```rust
+use rs_dagcuter::*;
+use async_trait::async_trait;
+use tokio_util::sync::CancellationToken;
+use std::{collections::HashMap, sync::Arc};
 
-struct ExampleTask { 
-name: String, 
-deps: Vec<String>, 
-} 
+struct ExampleTask {
+    name: String,
+    deps: Vec<String>,
+}
 
-#[async_trait] 
-impl Task for ExampleTask { 
-fn name(&self) -> &str { &self.name } 
-fn dependencies(&self) -> Vec<String> { self.deps.clone() } 
-fn retry_policy(&self) -> Option<RetryPolicy> { 
-Some(RetryPolicy { max_attempts: 3, ..Default::default() }) 
-} 
-async fn execute( 
-&self, 
-_ctx: CancellationToken, 
-_input: &TaskInput, 
-) -> Result<TaskResult, DagcuterError> { 
-println!("Execute task: {}", self.name); 
-tokio::time::sleep(std::time::Duration::from_millis(100)).await; 
-let mut out = HashMap::new(); 
-out.insert("status".into(), serde_json::json!("ok")); 
-Ok(out) 
-} 
-} 
+#[async_trait]
+impl Task for ExampleTask {
+    fn name(&self) -> &str { &self.name }
+    fn dependencies(&self) -> Vec<String> { self.deps.clone() }
+    fn retry_policy(&self) -> Option<RetryPolicy> {
+        Some(RetryPolicy { max_attempts: 3, ..Default::default() })
+    }
+    async fn execute(
+        &self,
+        _ctx: CancellationToken,
+        _input: &TaskInput,
+    ) -> Result<TaskResult, DagcuterError> {
+        println!("Execute task: {}", self.name);
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let mut out = HashMap::new();
+        out.insert("status".into(), serde_json::json!("ok"));
+        Ok(out)
+    }
+}
 
-#[tokio::main] 
-async fn main() { 
-let mut tasks: HashMap<String, BoxTask> = HashMap::new(); 
-tasks.insert("A".into(), Arc::new(ExampleTask { name: "A".into(), deps: vec![] })); 
-tasks.insert("B".into(), Arc::new(ExampleTask { name: "B".into(), deps: vec!["A".into()] })); 
+#[tokio::main]
+async fn main() {
+    let mut tasks: HashMap<String, BoxTask> = HashMap::new();
+    tasks.insert("A".into(), Arc::new(ExampleTask { name: "A".into(), deps: vec![] }));
+    tasks.insert("B".into(), Arc::new(ExampleTask { name: "B".into(), deps: vec!["A".into()] }));
 
-let mut engine = Dagcuter::new(tasks).unwrap(); 
-let ctx = CancellationToken::new(); 
+    let mut engine = Dagcuter::new(tasks).unwrap();
+    let ctx = CancellationToken::new();
 
-println!("=== dependency graph ==="); 
-engine.print_graph(); 
+    println!("=== dependency graph ===");
+    engine.print_graph();
 
-println!("=== Start execution ==="); 
-let results = engine.execute(ctx.clone()).await.unwrap(); 
-println!("=== completion: {:?} ===", results); 
-} ```
+    println!("=== Start execution ===");
+    let results = engine.execute(ctx.clone()).await.unwrap();
+    println!("=== completion: {:?} ===", results);
+}
+```
 
 3. Run the example: 
 
@@ -113,13 +114,13 @@ cargo run
 
 ```rust
 #[async_trait]
-pub trait Task: Send + Sync { 
-fn name(&self) -> &str; 
-fn dependencies(&self) -> Vec<String>; 
-fn retry_policy(&self) -> Option<RetryPolicy> { None } 
-async fn pre_execution(&self, _ctx: CancellationToken, _input: &TaskInput) -> Result<(), DagcuterError> { Ok(()) } 
-async fn execute(&self, ctx: CancellationToken, input: &TaskInput) -> Result<TaskResult, DagcuterError>; 
-async fn post_execution(&self, _ctx: CancellationToken, _output: &TaskResult) -> Result<(), DagcuterError> { Ok(()) }
+pub trait Task: Send + Sync {
+    fn name(&self) -> &str;
+    fn dependencies(&self) -> Vec<String>;
+    fn retry_policy(&self) -> Option<RetryPolicy> { None }
+    async fn pre_execution(&self, _ctx: CancellationToken, _input: &TaskInput) -> Result<(), DagcuterError> { Ok(()) }
+    async fn execute(&self, ctx: CancellationToken, input: &TaskInput) -> Result<TaskResult, DagcuterError>;
+    async fn post_execution(&self, _ctx: CancellationToken, _output: &TaskResult) -> Result<(), DagcuterError> { Ok(()) }
 }
 ```
 
@@ -127,26 +128,26 @@ async fn post_execution(&self, _ctx: CancellationToken, _output: &TaskResult) ->
 
 ```rust
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct RetryPolicy { 
-pub interval: Duration, 
-pub max_interval: Duration, 
-pub max_attempts: i32, 
-pub multiplier: f64,
+pub struct RetryPolicy {
+    pub interval: Duration,
+    pub max_interval: Duration,
+    pub max_attempts: i32,
+    pub multiplier: f64,
 }
 
-impl Default for RetryPolicy { 
-fn default() -> Self { /* 1s, 30s, -1, 2.0 */ }
+impl Default for RetryPolicy {
+    fn default() -> Self { /* 1s, 30s, -1, 2.0 */ }
 }
 ```
 
 ### `Dagcuter`
 
 ```rust
-impl Dagcuter { 
-pub fn new(tasks: HashMap<String, BoxTask>) -> Result<Self, DagcuterError>;
-pub async fn execute(&mut self, ctx: CancellationToken) -> Result<HashMap<String, TaskResult>, DagcuterError>;
-pub async fn execution_order(&self) -> Vec<String>;
-pub fn print_graph(&self);
+impl Dagcuter {
+    pub fn new(tasks: HashMap<String, BoxTask>) -> Result<Self, DagcuterError>;
+    pub async fn execute(&mut self, ctx: CancellationToken) -> Result<HashMap<String, TaskResult>, DagcuterError>;
+    pub async fn execution_order(&self) -> Vec<String>;
+    pub fn print_graph(&self);
 }
 ```
 
